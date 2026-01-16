@@ -11,7 +11,7 @@ int main() {
     cudaWarmup();
     std::cout << "debug";
     // Wczytanie sygnału
-    Signal signal("/home/patryk/Desktop/MASTER_THIESIS/fpga_prep/test_data.txt");
+    Signal signal("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/sum_sin_signal.txt");
     std::vector<float> originalSignal = signal.getSignal();
     std::cout << "debug";
 
