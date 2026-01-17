@@ -11,6 +11,7 @@ import numpy as np
 
 from pathlib import Path
 import os
+import random
 
 class SpektogramDataset(Dataset):
     def __init__(self, folder_path: Path, transform=None):
@@ -24,7 +25,7 @@ class SpektogramDataset(Dataset):
         spectrogram = cv2.imread(self.paths[index])
         spectrogram = cv2.cvtColor(spectrogram, cv2.COLOR_BGR2RGB)
 
-        label = int(self.paths[index].split("_")[-1].split(".")[0])
+        label = int(self.paths[index].split("_")[-1].split(".")[0])            
 
         if self.transform:
             spectrogram = self.transform(spectrogram)
