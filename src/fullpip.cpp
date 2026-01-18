@@ -11,7 +11,7 @@ FullPip::FullPip(int winSize, int overlap, std::vector<float> coff_filter, dsp::
     this->winType = winType;
 }
 
-std::vector<float> FullPip::processCPU(std::vector<float> input) {
+std::vector<float> FullPip::processCPU(std::vector<float> input, bool trash) {
 
     dsp::STFT stft(this->winSize, this->overlap, this->winType);
     dsp::FirFilter fir(this->coff_filter);
@@ -19,7 +19,11 @@ std::vector<float> FullPip::processCPU(std::vector<float> input) {
     std::vector<float> signal_filter = fir.processCPU(input);
     std::vector<float> stft_cpu = stft.processCPU(signal_filter);
     std::vector<float> stft_cpu_norm = dsp::MinMaxNormCPU(stft_cpu, 1.0f);
+
+    if (!trash)
+        return stft_cpu_norm;
+
     std::vector<float> thresh_cpu_stft = dsp::thresholdCPU(stft_cpu_norm, 0.2f);
 
-    return stft_cpu_norm;
+    return thresh_cpu_stft;
 }

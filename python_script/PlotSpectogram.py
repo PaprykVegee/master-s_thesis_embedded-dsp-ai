@@ -1,11 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import stft
+from scipy.signal import stft, firwin, filtfilt, lfilter
 
 # 1️⃣ Wczytaj dane
 data_cpu = np.loadtxt("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/spectrogram_cpu.txt")
 data_gpu = np.loadtxt("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/spectrogram_gpu.txt")
-#ref_data = np.loadtxt("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/
 ref_data = np.loadtxt("/home/patryk/Desktop/MASTER_THIESIS/fpga_prep/test_data.txt")
 
 # Parametry (muszą być zgodne z kodem C++)
@@ -13,7 +12,7 @@ fs = 50000
 N = 512
 hop = 256
 n_bins_cpu = N // 2 + 1     # Twoja klasa STFTApplyer na CPU zwraca winSize / 2
-n_bins_gpu = N // 2 + 1  # Klasa STFTApplyer na GPU (cuFFT D2Z) zwraca winSize / 2 + 1
+n_bins_gpu = N // 2 + 1     # Klasa STFTApplyer na GPU (cuFFT D2Z) zwraca winSize / 2 + 1
 
 print(data_cpu.shape, data_gpu.shape)
 
@@ -28,13 +27,27 @@ n_cols_gpu = len(data_gpu) // n_bins_gpu
 spectrogram_gpu = data_gpu.reshape((n_cols_gpu, n_bins_gpu)).T
 spectrogram_gpu_db = 20 * np.log10(spectrogram_gpu + 1e-10)
 
-# print("GPU spectrogram: min =", spectrogram_gpu.min(), ", max =", spectrogram_gpu.max())
+# 3️⃣ Filtracja sygnału referencyjnego FIR
+lowcut = 3000    # dolna częstotliwość [Hz]
+highcut = 8000   # górna częstotliwość [Hz]
+numtaps = 101    # liczba współczynników FIR
 
-# 3️⃣ Oblicz STFT referencyjne (SciPy)
-f, t, Zxx = stft(ref_data, fs=fs, nperseg=N, noverlap=N-hop)
+# Normalizacja częstotliwości do Nyquista
+nyq = fs / 2
+low = lowcut / nyq
+high = highcut / nyq
+
+# Projekt filtra FIR (bandpass)
+fir_coeff = firwin(numtaps, [low, high], pass_zero=False)
+
+# Filtracja sygnału (filtfilt dla zerowej fazy)
+ref_data_filtered = filtfilt(fir_coeff, [1.0], ref_data)
+
+# 4️⃣ Oblicz STFT referencyjne (SciPy)
+f, t, Zxx = stft(ref_data_filtered, fs=fs, nperseg=N, noverlap=N-hop)
 spectrogram_ref_db = 20 * np.log10(np.abs(Zxx) + 1e-10)
 
-# 4️⃣ Wyświetl trzy spektrogramy obok siebie
+# 5️⃣ Wyświetl trzy spektrogramy obok siebie
 plt.figure(figsize=(18, 6))
 
 # a) Spektrogram CPU
@@ -51,11 +64,11 @@ plt.colorbar(label='Amplitude [dB]')
 plt.title('GPU Spectrogram (cuFFT)')
 plt.xlabel('Time frames')
 
-# c) Spektrogram referencyjny (SciPy)
+# c) Spektrogram referencyjny (SciPy + FIR)
 plt.subplot(1, 3, 3)
 plt.pcolormesh(t, f, spectrogram_ref_db, shading='gouraud', cmap='magma')
 plt.colorbar(label='Amplitude [dB]')
-plt.title('Reference Spectrogram (SciPy)')
+plt.title('Reference Spectrogram (SciPy, FIR filtered)')
 plt.ylabel('Frequency [Hz]')
 plt.ylim(0, fs/2)
 

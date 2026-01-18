@@ -11,8 +11,8 @@ class FullPip
     public:
         FullPip(int winSize, int overlap, std::vector<float> coff_filter, dsp::WinType winType = dsp::WinType::Hann);
 
-        std::vector<float> processCPU(std::vector<float> input);
-        float* processGPU(std::vector<float> input, bool return_gpu = true);
+        std::vector<float> processCPU(std::vector<float> input, bool trash = true);
+        float* processGPU(std::vector<float> input, bool return_gpu = true, bool trash = true);
 
     private:
         int winSize;
