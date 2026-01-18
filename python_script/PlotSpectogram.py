@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from scipy.signal import stft, firwin, filtfilt, lfilter
 
 # 1️⃣ Wczytaj dane
-data_cpu = np.loadtxt("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/spectrogram_cpu.txt")
-data_gpu = np.loadtxt("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/spectrogram_gpu.txt")
-ref_data = np.loadtxt("/home/patryk/Desktop/MASTER_THIESIS/fpga_prep/test_data.txt")
+data_cpu = np.loadtxt("../data/spectrogram_cpu.txt")
+data_gpu = np.loadtxt("../data/spectrogram_gpu.txt")
+ref_data = np.loadtxt("../data/test_data.txt")
 
 # Parametry (muszą być zgodne z kodem C++)
 fs = 50000

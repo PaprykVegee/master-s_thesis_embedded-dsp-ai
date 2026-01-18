@@ -9,8 +9,8 @@
 int main() {
     // Warmup CUDA
     cudaWarmup();
-    // Wczytanie sygnału
-    Signal signal("/home/patryk/Desktop/MASTER_THIESIS/fpga_prep/test_data.txt");
+    // Wczytanie sygnałuxz
+    Signal signal("../data/test_data.txt");
     std::vector<float> originalSignal = signal.getSignal();
 
     // FIR coefficients
@@ -45,10 +45,10 @@ int main() {
     std::vector<float> stft_gpu_vec(stft_gpu, stft_gpu+stft_cpu.size());
 
     signal.setSignal(stft_cpu);
-    signal.writeSignal("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/spectrogram_cpu.txt");
+    signal.writeSignal("../data/spectrogram_cpu.txt");
 
     signal.setSignal(stft_gpu_vec);
-    signal.writeSignal("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/spectrogram_gpu.txt");
+    signal.writeSignal("../data/spectrogram_gpu.txt");
 
     // =======================
     // PRINT TIMES
