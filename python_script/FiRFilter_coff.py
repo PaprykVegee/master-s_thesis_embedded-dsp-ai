@@ -13,10 +13,10 @@ low = lowcut / nyq
 high = highcut / nyq
 
 fir_coeff = firwin(numtaps, [low, high], pass_zero=False)
-w_fir, h_fir = freqz(fir_coeff, worN=8000, fs=fs)
+w_fir, h_fir = freqz(fir_coeff, worN=800)
 
 b_iir, a_iir = butter(N=5, Wn=[low, high], btype='band')
-w_iir, h_iir = freqz(b_iir, a_iir, worN=8000, fs=fs)
+w_iir, h_iir = freqz(b_iir, a_iir, worN=8000)
 
 result = ", ".join(str(x) for x in fir_coeff)
 

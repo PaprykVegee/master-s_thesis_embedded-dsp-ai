@@ -1,6 +1,6 @@
 import numpy as np
 
-filename = "/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/sum_sin_signal.txt"
+filename = "/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/input.txt"
 fs = 50000
 N = 300000
 frequencies = [10, 50, 120, 1000, 2000, 3000, 10000]

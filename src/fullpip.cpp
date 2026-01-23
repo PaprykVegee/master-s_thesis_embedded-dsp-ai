@@ -23,7 +23,7 @@ std::vector<float> FullPip::processCPU(std::vector<float> input, bool trash) {
     if (!trash)
         return stft_cpu_norm;
 
-    std::vector<float> thresh_cpu_stft = dsp::thresholdCPU(stft_cpu_norm, 0.2f);
+    std::vector<float> thresh_cpu_stft = dsp::thresholdCPU(stft_cpu_norm, 0.5f);
 
     return thresh_cpu_stft;
 }

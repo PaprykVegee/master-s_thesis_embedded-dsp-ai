@@ -21,7 +21,7 @@ void dsp::fft(cf* a, int winSize, bool invert)
 
     // FFT
     for (int len = 2; len <= n; len <<= 1) {
-        double ang = 2 * std::numbers::pi / len * (invert ? -1 : 1);
+        double ang = 2 * M_PI / len * (invert ? -1 : 1);
         cf wlen(std::cos(ang), std::sin(ang));
 
         for (int i = 0; i < n; i += len) {

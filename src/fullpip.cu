@@ -18,20 +18,18 @@ float* FullPip::processGPU(std::vector<float> input, bool return_gpu, bool trash
     float* d_output = nullptr;
 
     if (trash) {
-        d_output = dsp::thresholdGPU(d_norm_fft_mag, outputSize, 0.2f, true);
+        d_output = dsp::thresholdGPU(d_norm_fft_mag, outputSize, 0.5f, true);
     } else {
         // jeśli trash=false, zwracamy tylko znormalizowany spektrogram
         d_output = d_norm_fft_mag;
     }
 
-    // 3️⃣ cleanup sygnałów pośrednich (te, które nie są w d_output)
     cudaFree(d_signal_filter);
     cudaFree(d_fft_mag);
     if (trash) {
         cudaFree(d_norm_fft_mag); // jeśli trash=true, d_output wskazuje na threshold, więc norm musimy zwolnić
     }
 
-    // 4️⃣ Zwracanie wyniku
     if (return_gpu) {
         return d_output; // caller MUSI cudaFree!
     }

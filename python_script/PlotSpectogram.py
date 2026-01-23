@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import stft, firwin, filtfilt, lfilter
+import cv2
 
 # 1️⃣ Wczytaj dane
 data_cpu = np.loadtxt("../data/spectrogram_cpu.txt")
@@ -9,8 +10,8 @@ ref_data = np.loadtxt("../data/test_data.txt")
 
 # Parametry (muszą być zgodne z kodem C++)
 fs = 50000
-N = 512
-hop = 256
+N = 256
+hop = 128
 n_bins_cpu = N // 2 + 1     # Twoja klasa STFTApplyer na CPU zwraca winSize / 2
 n_bins_gpu = N // 2 + 1     # Klasa STFTApplyer na GPU (cuFFT D2Z) zwraca winSize / 2 + 1
 
@@ -45,7 +46,10 @@ ref_data_filtered = filtfilt(fir_coeff, [1.0], ref_data)
 
 # 4️⃣ Oblicz STFT referencyjne (SciPy)
 f, t, Zxx = stft(ref_data_filtered, fs=fs, nperseg=N, noverlap=N-hop)
-spectrogram_ref_db = 20 * np.log10(np.abs(Zxx) + 1e-10)
+spectrogram_ref_db = np.log1p(np.abs(Zxx))
+spectrogram_ref_db = np.uint8(255* spectrogram_ref_db / np.max(spectrogram_ref_db))
+
+_, spectrogram_ref_db = cv2.threshold(spectrogram_ref_db, 127, 255, cv2.THRESH_BINARY)
 
 # 5️⃣ Wyświetl trzy spektrogramy obok siebie
 plt.figure(figsize=(18, 6))
@@ -71,6 +75,10 @@ plt.colorbar(label='Amplitude [dB]')
 plt.title('Reference Spectrogram (SciPy, FIR filtered)')
 plt.ylabel('Frequency [Hz]')
 plt.ylim(0, fs/2)
+
+print(spectrogram_cpu_db.shape)
+print(spectrogram_gpu_db.shape)
+print(spectrogram_ref_db.shape)
 
 plt.tight_layout()
 plt.show()
