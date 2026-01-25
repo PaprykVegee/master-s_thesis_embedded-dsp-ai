@@ -7,7 +7,7 @@
 #include "iostream"
 
 bool test_stft() {
-    Signal signal("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/sum_sin_signal.txt");
+    Signal signal("../data/sum_sin_signal.txt");
     std::vector<float> originalSignal = signal.getSignal();
 
     int winSize = 512;

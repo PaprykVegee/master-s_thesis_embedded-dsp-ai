@@ -9,5 +9,6 @@ int main() {
     test_win_applyer();
     test_stft();
     test_minmax();
+    test_resize();
     return 0;
 }

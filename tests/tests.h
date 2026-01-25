@@ -7,6 +7,8 @@
 #include "../src/utils/utils.h"
 #include "iostream"
 
+#include <cuda_runtime.h>
+
 #ifndef TESTS_H
 #define TESTS_H
 
@@ -14,6 +16,7 @@ bool test_firfilter();
 bool test_win_applyer();
 bool test_stft();
 bool test_minmax();
+bool test_resize();
 
 
 #endif //TESTS_H

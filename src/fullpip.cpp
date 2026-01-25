@@ -15,6 +15,9 @@ std::vector<float> FullPip::processCPU(std::vector<float> input, bool trash) {
 
     dsp::STFT stft(this->winSize, this->overlap, this->winType);
     dsp::FirFilter fir(this->coff_filter);
+    int n_bins = winSize / 2 + 1; // H
+    int in_w = input.size() / (n_bins * 3);
+
 
     std::vector<float> signal_filter = fir.processCPU(input);
     std::vector<float> stft_cpu = stft.processCPU(signal_filter);
@@ -24,6 +27,8 @@ std::vector<float> FullPip::processCPU(std::vector<float> input, bool trash) {
         return stft_cpu_norm;
 
     std::vector<float> thresh_cpu_stft = dsp::thresholdCPU(stft_cpu_norm, 0.5f);
+    std::vector<float> stft_transpose = TransposeCPU(thresh_cpu_stft, n_bins, in_w);
+    std::vector<float> stft_res = ResizeBilinear_CPU_CHW(stft_transpose, n_bins, in_w, 3, 256, 256);
 
-    return thresh_cpu_stft;
+    return stft_res;
 }

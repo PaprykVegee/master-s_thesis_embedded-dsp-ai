@@ -8,6 +8,10 @@ data_cpu = np.loadtxt("../data/spectrogram_cpu.txt")
 data_gpu = np.loadtxt("../data/spectrogram_gpu.txt")
 ref_data = np.loadtxt("../data/test_data.txt")
 
+#ref_data = ref_data[0:50000]
+
+ref_data = np.concatenate([ref_data, ref_data, ref_data])
+
 # Parametry (muszą być zgodne z kodem C++)
 fs = 50000
 N = 256
@@ -45,7 +49,14 @@ fir_coeff = firwin(numtaps, [low, high], pass_zero=False)
 ref_data_filtered = filtfilt(fir_coeff, [1.0], ref_data)
 
 # 4️⃣ Oblicz STFT referencyjne (SciPy)
-f, t, Zxx = stft(ref_data_filtered, fs=fs, nperseg=N, noverlap=N-hop)
+f, t, Zxx = stft(
+    ref_data_filtered,
+    fs=fs,
+    nperseg=N,
+    noverlap=N-hop,
+    boundary=None,   # Wyłącza dodawanie zer na brzegach
+    padded=False     # Wyłącza dopełnianie do potęgi 2 / pełnych okien
+)
 spectrogram_ref_db = np.log1p(np.abs(Zxx))
 spectrogram_ref_db = np.uint8(255* spectrogram_ref_db / np.max(spectrogram_ref_db))
 

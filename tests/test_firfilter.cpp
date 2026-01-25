@@ -22,20 +22,20 @@ bool test_firfilter() {
         0.0020395046501305893
     };
 
-    Signal signal("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/sum_sin_signal.txt");
+    Signal signal("../data/sum_sin_signal.txt");
     std::vector<float> originalSignal = signal.getSignal();
 
     dsp::FirFilter fir(fir_coeff);
 
     std::vector<float> cpu_filtred_signal = fir.processCPU(originalSignal);
     signal.setSignal(cpu_filtred_signal);
-    signal.writeSignal("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/filterd_signal_cpu.txt");
+    signal.writeSignal("../data/filterd_signal_cpu.txt");
 
     float* gpu_filtred_signal = fir.processGPU(originalSignal, false);
     std::vector<float> signalgpu(originalSignal.size());
     signalgpu.assign(gpu_filtred_signal, gpu_filtred_signal + originalSignal.size());
     signal.setSignal(signalgpu);
-    signal.writeSignal("/home/patryk/Desktop/MASTER_THIESIS/CUDA/data/filterd_signal_gpu.txt");
+    signal.writeSignal("../data/filterd_signal_gpu.txt");
 
     bool ok = true;
     float eps = 1e-3;
