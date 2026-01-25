@@ -1,84 +1,105 @@
-cmake_minimum_required(VERSION 3.22)
-project(CUDA LANGUAGES CXX CUDA)
+cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CUDA_STANDARD 20)
+project(CUDA CXX)
 
-# ==========================
-# Ścieżka do TensorRT
-# ==========================
-set(TENSORRT_DIR "/home/patryk/Desktop/TensorRT-10.13.3.9")
+# ========================
+# Standard C++
+# ========================
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Dodaj katalog z nagłówkami TensorRT
-include_directories(${TENSORRT_DIR}/include)
+# ========================
+# CUDA (stary styl)
+# ========================
+find_package(CUDA REQUIRED)
 
-# Dodaj katalog z bibliotekami TensorRT, żeby linker znalazł pliki .so
-link_directories(${TENSORRT_DIR}/lib)
+set(CUDA_STANDARD 14)
+set(CUDA_STANDARD_REQUIRED ON)
 
-# ==========================
-# Główny target CUDA
-# ==========================
-add_executable(CUDA
-        main.cpp
+# NVCC flags
+set(CUDA_NVCC_FLAGS
+        ${CUDA_NVCC_FLAGS}
+        -std=c++14
+        --expt-relaxed-constexpr
+)
+
+# ========================
+# Ścieżki do TensorRT
+# ========================
+set(TENSORRT_INCLUDE_DIR /usr/include/aarch64-linux-gnu)
+set(TENSORRT_LIB_DIR /usr/lib/aarch64-linux-gnu)
+
+include_directories(${TENSORRT_INCLUDE_DIR})
+link_directories(${TENSORRT_LIB_DIR})
+
+# ========================
+# Include directories
+# ========================
+include_directories(
+        ${CUDA_INCLUDE_DIRS}
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+# ========================
+# Ścieżka do libcudart
+# ========================
+link_directories(/usr/local/cuda-10.2/targets/aarch64-linux/lib)
+
+# ========================
+# Wspólne źródła
+# ========================
+set(COMMON_SOURCES
         src/cuda_kernels/kernels.cu
         src/dsp/SignalProcessing.cu
+        src/dsp/SignalProcessing.cpp
         src/structures/Signal.cpp
         src/structures/Matrix.cpp
-        src/dsp/SignalProcessing.cpp
-        src/utils/utils.h
         src/utils/utils.cpp
         src/utils/utils.cu
-        src/fullpip.h
         src/fullpip.cpp
         src/fullpip.cu
 )
 
-# Nagłówki głównego targetu
-target_include_directories(CUDA PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
+# ========================
+# Główny program
+# ========================
+cuda_add_executable(CUDA
+        main.cu
+        ${COMMON_SOURCES}
 )
 
-# Linkowanie bibliotek dla głównego targetu
-target_link_libraries(CUDA PRIVATE
- #       nvinfer          # TensorRT core
- #       nvparsers        # Parsery TensorRT (ONNX itd.)
-        cudart           # CUDA Runtime
-        cufft            # CUDA FFT
+target_link_libraries(CUDA
+        ${CUDA_LIBRARIES}
+        ${CUDA_CUFFT_LIBRARIES}
+        nvinfer
+        nvinfer_plugin
+        cudart
+        pthread
+        dl
+        z
 )
 
-# ==========================
-# Target do testów
-# ==========================
-add_executable(tests
-        tests/test_firfilter.cpp
-        src/cuda_kernels/kernels.cu
-        src/dsp/SignalProcessing.cu
-        src/structures/Signal.cpp
-        src/structures/Matrix.cpp
-        src/dsp/SignalProcessing.cpp
-        tests/test_win_applyer.cu
+# ========================
+# TESTY
+# ========================
+cuda_add_executable(tests
         tests/main_test.cpp
-        tests/tests.h
+        tests/test_firfilter.cpp
+        tests/test_win_applyer.cu
         tests/test_stft.cu
         tests/test_minmax.cu
         tests/test_resize.cu
-        src/utils/utils.cpp
-        src/utils/utils.h
-        src/utils/utils.cu
-        src/fullpip.h
-        src/fullpip.cpp
-        src/fullpip.cu
+        ${COMMON_SOURCES}
 )
 
-# Nagłówki testów
-target_include_directories(tests PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
-)
-
-# Linkowanie bibliotek testów
-target_link_libraries(tests PRIVATE
-  #      nvinfer
-  #      nvparsers
+target_link_libraries(tests
+        ${CUDA_LIBRARIES}
+        ${CUDA_CUFFT_LIBRARIES}
+        nvinfer
+        nvinfer_plugin
         cudart
-        cufft
+        pthread
+        dl
+        z
 )
+

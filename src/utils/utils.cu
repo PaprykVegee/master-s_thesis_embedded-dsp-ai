@@ -3,6 +3,7 @@
 
 #include <device_functions.h>
 #include <float.h>
+#include <cuda_fp16.h>
 
 __device__ static float atomicMin_float(float* address, float val) {
     int* address_as_i = (int*)address;

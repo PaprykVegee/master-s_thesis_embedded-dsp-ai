@@ -28,7 +28,7 @@ std::vector<float> FullPip::processCPU(std::vector<float> input, bool trash) {
 
     std::vector<float> thresh_cpu_stft = dsp::thresholdCPU(stft_cpu_norm, 0.5f);
     std::vector<float> stft_transpose = TransposeCPU(thresh_cpu_stft, n_bins, in_w);
-    std::vector<float> stft_res = ResizeBilinear_CPU_CHW(stft_transpose, n_bins, in_w, 3, 256, 256);
+    std::vector<float> stft_res = ResizeBilinear_CPU_CHW(stft_transpose, n_bins, in_w, 3, 224, 224);
 
     return stft_res;
 }

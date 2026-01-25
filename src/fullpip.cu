@@ -1,5 +1,7 @@
 #include "fullpip.h"
 
+
+
 float* FullPip::processGPU(std::vector<float> input, bool return_gpu, bool trash)
 {
     dsp::FirFilter fir(coff_filter);
@@ -27,7 +29,7 @@ float* FullPip::processGPU(std::vector<float> input, bool return_gpu, bool trash
 
     float* d_transposed = TransposeGPU(d_processed, n_bins, in_w, true);
 
-    float* d_output = ResizeBilinear_chw_GPU(d_transposed, n_bins, in_w, 256, 256, 3, true);
+    float* d_output = ResizeBilinear_chw_GPU(d_transposed, n_bins, in_w, 224, 224, 3, true);
 
     cudaFree(d_signal_filter);
     cudaFree(d_fft_mag);
