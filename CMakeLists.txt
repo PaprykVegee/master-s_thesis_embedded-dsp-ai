@@ -38,6 +38,7 @@ link_directories(${TENSORRT_LIB_DIR})
 include_directories(
         ${CUDA_INCLUDE_DIRS}
         ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src/ML_clf 
 )
 
 # ========================
@@ -58,6 +59,7 @@ set(COMMON_SOURCES
         src/utils/utils.cu
         src/fullpip.cpp
         src/fullpip.cu
+        src/ML_clf/trt_clf.cu
 )
 
 # ========================
