@@ -195,3 +195,22 @@ float* dsp::thresholdGPU(float* d_input, int signal_lenght, float threshold_val,
         return h_output;
     }
 }
+
+float* dsp::StandardScalerGPU(float* d_input, int signal_length, float mean, float std, bool returnGPU) {
+    float* d_output;
+    cudaMalloc((void**)&d_output, sizeof(float) * signal_length);
+
+    int threads = 256;
+    int blocks = (signal_length + threads - 1) / threads;
+    
+    standardScaler_kernel<<<blocks, threads>>>(d_input, d_output, signal_length, mean, std);
+
+    if (returnGPU) {
+        return d_output;
+    } else {
+        float* h_output = new float[signal_length];
+        cudaMemcpy(h_output, d_output, signal_length * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaFree(d_output);
+        return h_output;
+    }
+}

@@ -59,6 +59,9 @@ namespace dsp
 
     std::vector<float> thresholdCPU(std::vector<float> signal, float threshold_val);
     float* thresholdGPU(float* signal, int signal_lenght, float threshold_val, bool returnGPU = true);
+
+    std::vector<float> StandardScalerCPU(std::vector<float> signal, float mean, float std);
+    float* StandardScalerGPU(float* signal, int signal_lenght, float mean, float std, bool returnGPU = true);
 }
 
 #endif //SIGNALPROCESSING_H

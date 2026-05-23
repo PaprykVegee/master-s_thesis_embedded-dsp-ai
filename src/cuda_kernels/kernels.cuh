@@ -42,4 +42,12 @@ void threshold_kernel(
     float* d_output,
     int N,
     float trashold);
+
+__global__ 
+void standardScaler_kernel(
+    float* d_input,
+    float* d_output,
+    int N,
+    float mean,
+    float std);
 #endif

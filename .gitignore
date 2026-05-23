@@ -2,3 +2,5 @@
 build
 cmake-build-debug
 CmakeLists.txt
+SAS_data
+tmp

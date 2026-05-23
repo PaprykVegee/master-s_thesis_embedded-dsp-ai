@@ -34,13 +34,12 @@ void TRTClassifier::checkCuda(cudaError_t err, const char* msg) {
 }
 
 TRTClassifier::TRTClassifier(const std::string& engine_path, int device_id) {
-    // Ustaw urządzenie i zainicjuj kontekst CUDA
     checkCuda(cudaSetDevice(device_id), "cudaSetDevice");
     checkCuda(cudaFree(0), "cudaFree(0) - context init");
 
-    std::cout << "Loading TensorRT engine from: " << engine_path << std::endl;
+    //std::cout << "Loading TensorRT engine from: " << engine_path << std::endl;
     auto engineData = loadEngine(engine_path);
-    std::cout << "Engine size: " << engineData.size() << " bytes" << std::endl;
+   // std::cout << "Engine size: " << engineData.size() << " bytes" << std::endl;
 
     runtime_ = nvinfer1::createInferRuntime(logger_);
     if (!runtime_) throw std::runtime_error("Failed to create TensorRT runtime");
@@ -56,7 +55,6 @@ TRTClassifier::TRTClassifier(const std::string& engine_path, int device_id) {
     context_ = engine_->createExecutionContext();
     if (!context_) throw std::runtime_error("Failed to create execution context");
 
-    // Ustaw wymiary wejściowe (zakładamy [1,3,224,224])
     nvinfer1::Dims inputDims = engine_->getBindingDimensions(inputIndex);
     bool dynamic = false;
     for (int i = 0; i < inputDims.nbDims; ++i)
@@ -73,7 +71,6 @@ TRTClassifier::TRTClassifier(const std::string& engine_path, int device_id) {
     for (int i = 0; i < outDims.nbDims; ++i)
         output_size_ *= outDims.d[i];
 
-    // Alokuj bufory GPU
     int inputElems = 1 * 3 * 224 * 224;
     checkCuda(cudaMalloc(&input_half_, inputElems * sizeof(__half)), "cudaMalloc input_half_");
     checkCuda(cudaMalloc(&output_half_, output_size_ * sizeof(__half)), "cudaMalloc output_half_");
@@ -114,3 +111,27 @@ std::vector<float> TRTClassifier::predict(float* gpu_input_float, cudaStream_t s
 
     return output_float;
 }
+
+std::vector<float> SoftMax(std::vector<float> logits){
+    float acc = 0;
+
+    std::vector<float> results;
+
+    for (int i = 0; i < logits.size(); i++)
+        acc += std::exp(logits[i]);
+    
+    for (int i = 0; i < logits.size(); i++) {
+        results.push_back(std::exp(logits[i])/acc);
+    };
+
+    return results;
+}
+
+
+/*
+/usr/src/tensorrt/bin/trtexec \
+--onnx=/home/evs/Desktop/new_imp/master-s_thesis_embedded-dsp-ai/jetson_nano_nn/models/resnet18.onnx \
+--saveEngine=/home/evs/Desktop/master-s_thesis_embedded-dsp-ai/nn_model/resnet18_engine_nano_v2.trt \
+--fp16 \
+--verbose
+*/

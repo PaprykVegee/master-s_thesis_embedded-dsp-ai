@@ -90,3 +90,11 @@ __global__ void threshold_kernel(float* d_input, float* d_output, int N, float t
         d_output[idx] = (d_input[idx] > trashold) ? 1.0f: 0.0f;
     }
 }
+
+__global__ void standardScaler_kernel(float* d_input, float* d_output, int N, float mean, float std) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (idx < N) {
+        d_output[idx] = (d_input[idx] - mean) / std;
+    }
+}

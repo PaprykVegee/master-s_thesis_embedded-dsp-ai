@@ -7,6 +7,8 @@
 #include <NvInfer.h>
 #include <cuda_fp16.h>
 
+#include <cmath>
+
 class TRTClassifier {
 public:
     explicit TRTClassifier(const std::string& engine_path, int device_id = 0);
@@ -32,5 +34,8 @@ private:
     static std::vector<char> loadEngine(const std::string& path);
     void checkCuda(cudaError_t err, const char* msg);
 };
+
+
+std::vector<float> SoftMax(std::vector<float> logits);
 
 #endif // TRT_CLF_H

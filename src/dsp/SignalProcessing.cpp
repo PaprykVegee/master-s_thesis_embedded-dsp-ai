@@ -170,6 +170,14 @@ std::vector<float> dsp::thresholdCPU(std::vector<float> signal, float threshold_
     return threshold_signal;
 }
 
+std::vector<float> StandardScalerCPU(std::vector<float> signal, float mean, float std) {
+    std::vector<float> norm_signal(signal.size());
+    for (size_t i = 0; i < signal.size(); i++) {
+        norm_signal[i] = (signal[i] - mean) / std; 
+    }
+    return norm_signal;
+}
+
 
 
 

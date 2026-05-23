@@ -29,19 +29,23 @@ float* FullPip::processGPU(std::vector<float> input, bool return_gpu, bool trash
 
     float* d_transposed = TransposeGPU(d_processed, n_bins, in_w, true);
 
-    float* d_output = ResizeBilinear_chw_GPU(d_transposed, n_bins, in_w, 224, 224, 3, true);
+    float* d_norm = dsp::StandardScalerGPU(d_transposed, totalElements, 0.5, 0.5, true);
+
+    float* d_output = ResizeBilinear_chw_GPU(d_norm, n_bins, in_w, 224, 224, 3, true);
 
     cudaFree(d_signal_filter);
     cudaFree(d_fft_mag);
     cudaFree(d_norm_fft_mag);
     if (trash) cudaFree(d_processed);
     cudaFree(d_transposed); // Zwalniamy po zrobieniu Resize
+    cudaFree(d_norm);
+
 
     if (return_gpu) {
         return d_output;
     }
 
-    size_t outSize = 3 * 256 * 256;
+    size_t outSize = 3 * 224 * 224;
     float* h_out = new float[outSize];
     cudaMemcpy(h_out, d_output, outSize * sizeof(float), cudaMemcpyDeviceToHost);
 
