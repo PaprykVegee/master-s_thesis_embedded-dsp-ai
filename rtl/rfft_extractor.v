@@ -5,13 +5,11 @@ module rfft_extractor #(
     input  wire aclk,
     input  wire aresetn,
 
-    // input AXI-stream (FFT output)
     input  wire s_axis_tvalid,
     output wire s_axis_tready,
     input  wire s_axis_tlast,
     input  wire [DATA_WIDTH-1:0] s_axis_tdata,
 
-    // output AXI-stream (half spectrum)
     output reg  m_axis_tvalid,
     input  wire m_axis_tready,
     output reg  m_axis_tlast,
@@ -22,7 +20,6 @@ module rfft_extractor #(
 
     reg [$clog2(COUNTS)-1:0] bin_cnt;
 
-    // always ready (najprościej)
     assign s_axis_tready = m_axis_tready;
 
     always @(posedge aclk) begin

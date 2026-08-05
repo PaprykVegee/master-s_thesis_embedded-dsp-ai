@@ -1,138 +1,136 @@
-module neighbors_resize #(
-    parameter IN_WIDTH = 100,
-    parameter IN_HEIGHT = 100,
-    parameter OUT_WIDTH = 200,
-    parameter OUT_HEIGHT = 200
+module neighbors_resize_axis #(
+    parameter COLOR_CH = 3,
+
+    parameter IN_WIDTH = 129,
+    parameter IN_HEIGHT = 129,
+    parameter OUT_WIDTH = 224,
+    parameter OUT_HEIGHT = 224
 )(
     input  wire                    aclk,
-    input  wire                    areset,
-    
+    input  wire                    areset, 
+
     input  wire                    s_axis_tvalid,
     output reg                     s_axis_tready,
     input  wire                    s_axis_tlast,
-    input  wire [23:0]             s_axis_tdata,
-    
+    input  wire [COLOR_CH*8 - 1:0]             s_axis_tdata,
+
     output reg                     m_axis_tvalid,
     output reg                     m_axis_tlast,
-    output reg [23:0]              m_axis_tdata,
+    output reg [COLOR_CH*8 - 1:0]              m_axis_tdata,
     input  wire                    m_axis_tready,
     
+    output wire [23:0] debug,
+
     output reg                     bram_en_a,
     output reg                     bram_we_a,
     output reg [$clog2(IN_WIDTH)-1:0] bram_addr_a,
-    output reg [23:0]              bram_din_a,
-    
+    output reg [COLOR_CH*8 - 1:0]              bram_din_a, 
     output reg                     bram_en_b,
     output reg [$clog2(IN_WIDTH)-1:0] bram_addr_b,
-    input  wire [23:0]             bram_dout_b
+    input  wire [COLOR_CH*8 - 1:0]             bram_dout_b
 );
+    assign debug = s_axis_tdata;
+    
+    localparam FRAC_BITS = 16;
+    localparam [31:0] X_STEP = (IN_WIDTH << FRAC_BITS) / OUT_WIDTH;
+    localparam [31:0] Y_STEP = (IN_HEIGHT << FRAC_BITS) / OUT_HEIGHT;
 
-localparam FRAC_BITS = 12; 
+    reg [31:0] x_acc; 
+    reg [31:0] y_acc; 
+    
+    reg [$clog2(OUT_WIDTH)-1:0]  x_out_cnt;
+    reg [$clog2(OUT_HEIGHT)-1:0] y_out_cnt;
+    reg [$clog2(IN_HEIGHT)-1:0]  y_in_cnt;
 
-localparam INT_BITS_Y = $clog2(IN_HEIGHT);
-localparam INT_BITS_X = $clog2(IN_WIDTH);
+    reg row_available, row_consumed, frame_done;
 
-localparam TOTAL_BITS_Y = INT_BITS_Y + FRAC_BITS;
-localparam TOTAL_BITS_X = INT_BITS_X + FRAC_BITS;
-
-localparam [TOTAL_BITS_Y-1:0] Y_RATIO = ((IN_HEIGHT-1) << FRAC_BITS) / (OUT_HEIGHT-1);
-localparam [TOTAL_BITS_X-1:0] X_RATIO = ((IN_WIDTH-1) << FRAC_BITS) / (OUT_WIDTH-1);
-
-reg [$clog2(OUT_WIDTH)-1:0]  x_out_r;
-reg [$clog2(OUT_HEIGHT)-1:0] y_out_r;
-
-reg [$clog2(IN_HEIGHT)-1:0] y_in_r;
-wire [$clog2(IN_WIDTH)-1:0] x_in;
-wire [$clog2(IN_HEIGHT)-1:0] y_in;
-
-assign x_in = (x_out_r * X_RATIO) >> FRAC_BITS;
-assign y_in = (y_out_r * Y_RATIO) >> FRAC_BITS;
-
-reg [$clog2(IN_WIDTH)-1:0] d_addr_a;
-reg [$clog2(IN_HEIGHT)-1:0] current_row; // wiersz w BRAM
-reg row_rdy;
-
-always @(posedge aclk) begin
-    if (!areset) begin
-        s_axis_tready <= 0;
-        bram_din_a <= 0;
-        d_addr_a <= 0;
-        bram_en_a <= 0;
-        bram_we_a <= 0;
-        current_row <= 0;
-        row_rdy <= 0;
-    end else begin
-        s_axis_tready <= ~row_rdy;
-
-        if (s_axis_tvalid && ~row_rdy) begin
-            bram_en_a <= 1;
-            bram_we_a <= 1;
-            bram_addr_a <= d_addr_a;
-            bram_din_a <= s_axis_tdata;
-
-            if (s_axis_tlast) begin
-                d_addr_a <= 0;
-                current_row <= current_row + 1;
-                row_rdy <= 1; 
-            end else begin
-                d_addr_a <= d_addr_a + 1;
-            end
+    always @(posedge aclk) begin
+        if (!areset) begin
+            s_axis_tready <= 0;
+            bram_addr_a   <= 0;
+            row_available <= 0;
+            y_in_cnt      <= 0;
+            bram_en_a     <= 0;
+            bram_we_a     <= 0;
         end else begin
-            bram_en_a <= 0;
-            bram_we_a <= 0;
+            s_axis_tready <= !row_available;
+            
+            if (s_axis_tvalid && s_axis_tready) begin
+                bram_en_a  <= 1; 
+                bram_we_a  <= 1; 
+                bram_din_a <= s_axis_tdata;
+                
+                if (s_axis_tlast) begin
+                    bram_addr_a <= 0; 
+                    row_available <= 1; 
+                    y_in_cnt <= y_in_cnt + 1;
+                end else begin
+                    bram_addr_a <= bram_addr_a + 1;
+                end
+            end else begin
+                bram_en_a <= 0; 
+                bram_we_a <= 0;
+                if (row_consumed) row_available <= 0;
+            end
+            
+            if (frame_done) y_in_cnt <= 0;
         end
     end
-end
 
-reg frame_active;
+    reg vld_p1, lst_p1;
+    
+    wire [$clog2(IN_WIDTH)-1:0] current_x_in = x_acc >> FRAC_BITS;
+    wire [$clog2(IN_HEIGHT)-1:0] current_y_in = y_acc >> FRAC_BITS;
 
-always @(posedge aclk) begin
-    if (!areset) begin
-        m_axis_tvalid <= 0;
-        m_axis_tlast  <= 0;
-        m_axis_tdata  <= 0;
-        bram_en_b     <= 0;
-        bram_addr_b   <= 0;
-        x_out_r       <= 0;
-        y_out_r       <= 0;
-        y_in_r        <= 0;
-        row_rdy       <= 0;
-        frame_active <= 1;
-    end else begin
-        y_in_r <= y_in;
-
-        row_rdy <= (current_row != y_in_r);
-
-        if (m_axis_tready && !row_rdy) begin
-            m_axis_tvalid <= 0;
+    always @(posedge aclk) begin
+        if (!areset) begin
+            x_out_cnt <= 0; y_out_cnt <= 0;
+            x_acc <= 0; y_acc <= 0;
+            m_axis_tvalid <= 0; m_axis_tlast <= 0;
+            row_consumed <= 0; frame_done <= 0;
+            vld_p1 <= 0; lst_p1 <= 0;
             bram_en_b <= 0;
-        end else if (m_axis_tready && row_rdy && frame_active) begin
-            m_axis_tvalid <= 1;
-            bram_en_b <= 1;
-            bram_addr_b <= x_in;
-            m_axis_tdata <= bram_dout_b;
-
-            if (x_out_r == OUT_WIDTH-1 && y_out_r == OUT_HEIGHT-1) begin
-                m_axis_tlast <= 1;
-                frame_active <= 0;
-            end else
-                m_axis_tlast <= 0;
-
-            if (x_out_r == OUT_WIDTH-1) begin
-                x_out_r <= 0;
-                if (y_out_r < OUT_HEIGHT-1)
-                    y_out_r <= y_out_r + 1;
-            end else begin
-                x_out_r <= x_out_r + 1;
-            end
         end else begin
-            m_axis_tvalid <= 0;
-            bram_en_b <= 0;
+            row_consumed <= 0; 
+            frame_done   <= 0;
+
+            if (m_axis_tready) begin
+                
+                if (row_available && (current_y_in == (y_in_cnt - 1))) begin
+                    bram_en_b   <= 1;
+                    bram_addr_b <= (current_x_in >= IN_WIDTH) ? IN_WIDTH-1 : current_x_in;
+                    
+                    vld_p1 <= 1;
+                    lst_p1 <= (x_out_cnt == OUT_WIDTH-1);
+
+
+                    if (x_out_cnt == OUT_WIDTH-1) begin
+                        x_out_cnt <= 0;
+                        x_acc     <= 0;
+                        if (y_out_cnt == OUT_HEIGHT-1) begin
+                            y_out_cnt  <= 0; 
+                            y_acc      <= 0;
+                            frame_done <= 1; 
+                            row_consumed <= 1;
+                        end else begin
+                            y_out_cnt <= y_out_cnt + 1;
+                            y_acc     <= y_acc + Y_STEP;
+                            if (((y_acc + Y_STEP) >> FRAC_BITS) != current_y_in) row_consumed <= 1;
+                        end
+                    end else begin
+                        x_out_cnt <= x_out_cnt + 1;
+                        x_acc     <= x_acc + X_STEP;
+                    end
+                end else begin
+                    bram_en_b <= 0;
+                    vld_p1    <= 0;
+                    lst_p1    <= 0;
+                end
+
+                m_axis_tvalid <= vld_p1;
+                m_axis_tlast  <= lst_p1;
+                m_axis_tdata  <= (vld_p1) ? bram_dout_b : 0;
+            end
         end
     end
-end
-
-assign x_out = x_out_r;
-assign y_out = y_out_r;
-
 endmodule
